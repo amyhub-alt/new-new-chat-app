@@ -1,81 +1,79 @@
-import StartScreen from './components/start';
-import ChatScreen from './components/chat';
-import { View, Text, Alert, Platform, LogBox } from "react-native";
+import {
+	StyleSheet,
+	TextInput,
+	View,
+	Text,
+	Alert,
+	Button,
+	LogBox,
+} from 'react-native';
+import { useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { useEffect } from "react";
-import { useNetInfo } from "@react-native-community/netinfo";
+import { getStorage } from 'firebase/storage';
 
 const Stack = createNativeStackNavigator();
 
 import { initializeApp } from 'firebase/app';
-import { getFirestore, disableNetwork, enableNetwork } from 'firebase/firestore';
-import { getStorage } from "firebase/storage";
-import { useNetInfo } from '@react-native-community/netinfo';
-import { getAuth } from "firebase/auth";
+import {
+	getFirestore,
+	disableNetwork,
+	enableNetwork,
+} from 'firebase/firestore';
 
-LogBox.ignoreLogs(["AsyncStorage has been extracted from"]);
+import { useNetInfo } from '@react-native-community/netinfo';
+
+import Start from './components/Start';
+import Chat from './components/Chat';
 
 const App = () => {
-  const connectionStatus = useNetInfo();
+	// Your web app's Firebase configuration
+	const firebaseConfig = {
+		apiKey: 'AIzaSyBQxuMA1oT9GaVMpsusVnc7jUbwcG82fVc',
+		authDomain: 'chat-app-ee378.firebaseapp.com',
+		projectId: 'chat-app-ee378',
+		storageBucket: 'chat-app-ee378.firebasestorage.app',
+		messagingSenderId: '838671435693',
+		appId: '1:838671435693:web:f0314f2910bebd23118324',
+	};
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyBQxuMA1oT9GaVMpsusVnc7jUbwcG82fVc",
-    authDomain: "chat-app-ee378.firebaseapp.com",
-    projectId: "chat-app-ee378",
-    storageBucket: "chat-app-ee378.firebasestorage.app",
-    messagingSenderId: "838671435693",
-    appId: "1:838671435693:web:f0314f2910bebd23118324"
-  };
-  
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-  const auth = getAuth(app);
-  const storage = getStorage(app);
+	// Initialize Firebase
+	const app = initializeApp(firebaseConfig);
+	const storage = getStorage(app);
 
+	// Initialize Cloud Firestore and get a reference to the service
+	const db = getFirestore(app);
 
-  useEffect(() => {
-    const handleConnectivityChange = async () => {
-      try {
-        if (connectionStatus.isConnected === false) {
-          console.log("cONNECTION lOST!")
-          Alert.alert("Connection Lost!");
-          await disableNetwork(db);
-        } else if (connectionStatus.isConnected === true) {
-          console.log("cONNECTION IS BACK!")
-          await enableNetwork(db);
+	const connectionStatus = useNetInfo();
+	useEffect(() => {
+		if (connectionStatus.isConnected === false) {
+			Alert.alert('Connection Lost!');
+			disableNetwork(db);
+		} else if (connectionStatus.isConnected === true) {
+			enableNetwork(db);
+		}
+	}, [connectionStatus.isConnected]);
 
-        }
-      } catch (error) {
-        console.error("Network status change error:", error);
-      }
-    };
-    //test
-    
-
-    handleConnectivityChange();
-  }, [connectionStatus.isConnected]);
-  
-
-  return (
-    <NavigationContainer>
-      <Stack.Navigator initialRouteName="Start">
-      <Stack.Screen name="Start" options={{headerShown: false}}>
-          {(props) => <StartScreen {...props} auth={auth} />}
-        </Stack.Screen>
-        <Stack.Screen
-          name="Chat"
-        >
-          {props => <Chat
-            isConnected={connectionStatus.isConnected}
-            db={db}
-            storage={storage}
-            {...props}
-          />}
-        </Stack.Screen>
-      </Stack.Navigator>
-    </NavigationContainer>
-  );
+	return (
+		<NavigationContainer>
+			<Stack.Navigator initialRouteName="Start">
+				<Stack.Screen
+					name="Start"
+					component={Start}
+				/>
+				<Stack.Screen name="Chat">
+					{(props) => (
+						<Chat
+							isConnected={connectionStatus.isConnected}
+							db={db}
+							storage={storage}
+							{...props}
+						/>
+					)}
+				</Stack.Screen>
+			</Stack.Navigator>
+		</NavigationContainer>
+	);
 };
 
 export default App;
